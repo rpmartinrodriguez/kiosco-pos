@@ -1,4 +1,4 @@
-# Kiosco POS 2.2
+# Kiosco POS 2.3
 
 ## Configuración inicial (obligatoria)
 
@@ -30,3 +30,9 @@ Sintaxis JavaScript revisada; cálculo de packs, formato argentino y medios de p
 - Menú lateral desplegable, formulario por etapas, precio sugerido editable y reposición con aviso de aumento del costo unitario. El historial por producto consulta los eventos de alta, modificación, reposición y ventas, incluidos registros previos disponibles en auditoría y stockMoves. No se reconstruyen eventos que nunca fueron registrados.
 - Historial de cajas agrupado por día de apertura y filtros por fechas y operador; ranking por cantidad y estadísticas por hora real de venta en horario argentino. Mercado Pago/transferencia incluye los medios digitales históricos; el detalle conserva todos los medios originales.
 - El administrador puede asignar contraseñas temporarias, tanto al crear una cuenta como al recuperarla. Se bloquean todas las operaciones del usuario hasta que elija una contraseña distinta, verificando la temporal en el servidor. Se revocan sesiones anteriores y se eliminan los tokens push del usuario al restablecer la contraseña. Si una operación de autenticación se interrumpe entre Firebase Auth y Firestore, el administrador debe repetir el restablecimiento después de un minuto (o usar la consola de Firebase y corregir el perfil si el administrador principal quedó bloqueado). No se guardan contraseñas en texto plano ni en auditoría. Se requiere permiso de Firebase Admin para actualizar usuarios y revocar sesiones. No es recuperación por correo: los correos internos pueden ser ficticios.
+
+## Versión 2.3
+
+- Contraste aumentado en paneles, tablas, formularios y totales. Los campos numéricos usan formato argentino en vivo, con punto de miles y coma decimal; los códigos de barras permanecen como texto sin formato.
+- Categorías: se sugieren las categorías existentes de productos y el servidor reutiliza una etiqueta canónica por clave normalizada (mayúsculas, tildes y espacios). `categories` se crea automáticamente al guardar; no se reescriben categorías históricas ni se fusionan sinónimos o plurales distintos.
+- La campanita de administración abre las últimas 100 notificaciones de eventos y guarda el estado leído/borrado por UID en `notificationReceipts`; `notifications` se crea automáticamente con las nuevas operaciones. Los eventos anteriores disponibles se recuperan de las últimas 100 entradas de auditoría. Borrar una notificación no elimina auditoría, ventas ni stock, ni afecta la bandeja de otros administradores. La campanita se actualiza al abrirla, iniciar sesión, actualizar la app, regresar a la pestaña o recibir push en primer plano. No agrega polling continuo. No se necesitan nuevas reglas ni variables.
