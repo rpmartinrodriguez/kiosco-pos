@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 const methods=['Efectivo','Mercado Pago'];
 const adminEmail=()=> (process.env.ADMIN_EMAIL||'admin@kiosco.com').trim().toLowerCase();
 const hash=s=>createHash('sha256').update(s).digest('hex');
-const money=n=>new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',minimumFractionDigits:0,maximumFractionDigits:2}).format(n);
+const money=n=>new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',minimumFractionDigits:Number.isInteger(n)?0:2,maximumFractionDigits:2}).format(n);
 const fail=(m,status=400)=>{throw Object.assign(new Error(m),{status})};
 const num=(n,{min=0,integer=false}={})=>{if(typeof n!=='number'||!Number.isFinite(n)||n<min||Math.abs(n)>1e12||(integer&&!Number.isSafeInteger(n)))fail('Importe o cantidad inválida');return n};
 const str=(s,max=200,required=true)=>{if(typeof s!=='string'||s.length>max||(required&&!s.trim()))fail('Texto inválido');return s.trim()};
@@ -23,7 +23,7 @@ async function state(db,u){
  db.collection('products').get(),
  isAdmin?db.collection('sessions').get():active?db.collection('sessions').doc(active).get():Promise.resolve(null),
  isAdmin?db.collection('sales').get():active?db.collection('sales').where('sessionId','==',active).get():Promise.resolve(null),
- db.collection('stockMoves').orderBy('at','desc').limit(200).get(),
+ isAdmin?db.collection('stockMoves').get():db.collection('stockMoves').orderBy('at','desc').limit(200).get(),
  isAdmin?db.collection('cashMoves').get():active?db.collection('cashMoves').where('sessionId','==',active).get():Promise.resolve(null),
  isAdmin?db.collection('audit').orderBy('at','desc').limit(100).get():Promise.resolve(null),
  isAdmin?db.collection('users').get():Promise.resolve(null)
