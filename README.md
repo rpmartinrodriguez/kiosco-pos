@@ -1,4 +1,4 @@
-# Kiosco POS 2.3
+# Kiosco POS 2.4
 
 ## Configuración inicial (obligatoria)
 
@@ -36,3 +36,9 @@ Sintaxis JavaScript revisada; cálculo de packs, formato argentino y medios de p
 - Contraste aumentado en paneles, tablas, formularios y totales. Los campos numéricos usan formato argentino en vivo, con punto de miles y coma decimal; los códigos de barras permanecen como texto sin formato.
 - Categorías: se sugieren las categorías existentes de productos y el servidor reutiliza una etiqueta canónica por clave normalizada (mayúsculas, tildes y espacios). `categories` se crea automáticamente al guardar; no se reescriben categorías históricas ni se fusionan sinónimos o plurales distintos.
 - La campanita de administración abre las últimas 100 notificaciones de eventos y guarda el estado leído/borrado por UID en `notificationReceipts`; `notifications` se crea automáticamente con las nuevas operaciones. Los eventos anteriores disponibles se recuperan de las últimas 100 entradas de auditoría. Borrar una notificación no elimina auditoría, ventas ni stock, ni afecta la bandeja de otros administradores. La campanita se actualiza al abrirla, iniciar sesión, actualizar la app, regresar a la pestaña o recibir push en primer plano. No agrega polling continuo. No se necesitan nuevas reglas ni variables.
+
+## Versión 2.4
+
+- Alta y edición de productos en una vista amplia de tres columnas en escritorio, con resumen de compra, stock y precio editable visibles juntos. En pantallas estrechas o de altura insuficiente se reorganiza y permite desplazamiento con acciones inferiores accesibles; no se ocultan campos obligatorios.
+- Alta, edición y reposición admiten precio de compra con IVA incluido (predeterminado para productos existentes sin datos de IVA) o sin IVA. En este último caso se suma 21% y se redondea el importe de compra por presentación a centavos antes de dividir por unidades y aplicar el recargo y redondeo a centenas. El servidor repite el cálculo y guarda el costo final unitario, la condición ingresada, el importe de compra y el importe final por presentación. Los costos anteriores no se migran ni se incrementan automáticamente. El IVA es un componente del costo según la modalidad solicitada, no un cálculo fiscal de crédito o débito de IVA.
+- No requiere cambios en las reglas ni variables existentes. Pruebas de cálculo y sintaxis realizadas; queda pendiente verificar el ajuste visual en los tamaños reales de pantalla y la integración en Netlify/Firebase.
