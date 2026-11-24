@@ -1,4 +1,4 @@
-# Kiosco POS 2.1
+# Kiosco POS 2.2
 
 ## Configuración inicial (obligatoria)
 
@@ -24,3 +24,9 @@ FCM se envía desde Netlify tras confirmar la operación. Se alerta por apertura
 ## Validación y límites
 
 Sintaxis JavaScript revisada; cálculo de packs, formato argentino y medios de pago comprobados mediante pruebas unitarias simples. No se han instalado dependencias ni ejecutado build en el entorno de generación por falta de acceso al registro npm. No se ha probado conexión a Firebase, despliegue, lectores o FCM en dispositivos reales. Validar todo antes de utilizar con ventas reales. La interfaz consulta inventario e historial completo al iniciar y al actualizar después de cambios; antes de escalar a un kiosco de alto volumen, implementar paginación y sincronización incremental para reducir lecturas. Las reglas cerradas requieren usar las Functions; `npm run dev` por sí solo no sirve para probar API. Usar `netlify dev` con variables configuradas o un deploy de prueba. No hay soporte offline de ventas, facturación fiscal ni conciliación bancaria.
+
+## Versión 2.2
+
+- Menú lateral desplegable, formulario por etapas, precio sugerido editable y reposición con aviso de aumento del costo unitario. El historial por producto consulta los eventos de alta, modificación, reposición y ventas, incluidos registros previos disponibles en auditoría y stockMoves. No se reconstruyen eventos que nunca fueron registrados.
+- Historial de cajas agrupado por día de apertura y filtros por fechas y operador; ranking por cantidad y estadísticas por hora real de venta en horario argentino. Mercado Pago/transferencia incluye los medios digitales históricos; el detalle conserva todos los medios originales.
+- El administrador puede asignar contraseñas temporarias, tanto al crear una cuenta como al recuperarla. Se bloquean todas las operaciones del usuario hasta que elija una contraseña distinta, verificando la temporal en el servidor. Se revocan sesiones anteriores y se eliminan los tokens push del usuario al restablecer la contraseña. Si una operación de autenticación se interrumpe entre Firebase Auth y Firestore, el administrador debe repetir el restablecimiento después de un minuto (o usar la consola de Firebase y corregir el perfil si el administrador principal quedó bloqueado). No se guardan contraseñas en texto plano ni en auditoría. Se requiere permiso de Firebase Admin para actualizar usuarios y revocar sesiones. No es recuperación por correo: los correos internos pueden ser ficticios.

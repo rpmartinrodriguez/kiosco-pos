@@ -69,20 +69,23 @@ async function resetPassword(db,u,d,requestId){
  if(target.disabled)fail('Usuario deshabilitado',403);
  const audit=db.collection('audit').doc(id(requestId)),previous=await audit.get();if(previous.exists){if(previous.data().action!=='resetPassword'||previous.data().actor.uid!==u.uid)fail('Solicitud duplicada',409);return {ok:true,self:target.uid===u.uid}}
  const resetId=audit.id;
- await ref.set({name:profile?.name||target.displayName||email,email,role:primary?'admin':profile.role,active:true,mustChangePassword:true,resetPending:true,resetId,temporaryPasswordHash:passwordHash(password)},{merge:true});
+ const hashValue=passwordHash(password);await db.runTransaction(async tx=>{const current=(await tx.get(ref)).data();if(current?.resetPending&&Date.now()-(current.resetPendingAt||0)<60000)fail('Hay un cambio de contraseña en curso. Reintentá en un minuto',409);tx.set(ref,{name:profile?.name||target.displayName||email,email,role:primary?'admin':profile.role,active:true,mustChangePassword:true,resetPending:true,resetPendingAt:Date.now(),resetId,temporaryPasswordHash:hashValue},{merge:true})});
  await getAuth().updateUser(target.uid,{password});
  await getAuth().revokeRefreshTokens(target.uid);
- await db.runTransaction(async tx=>{const current=(await tx.get(ref)).data();if(current?.resetId!==resetId)fail('Hay otro restablecimiento en curso',409);tx.update(ref,{resetPending:false});tx.create(audit,{id:audit.id,at:Date.now(),action:'resetPassword',actor:actor(u),notify:false,title:'Contraseña temporal asignada',body:email,details:{uid:target.uid,email}})});
+ const tokens=await db.collection('pushTokens').where('uid','==',target.uid).get();await Promise.all(tokens.docs.map(x=>x.ref.delete()));
+ await db.runTransaction(async tx=>{const current=(await tx.get(ref)).data();if(current?.resetId!==resetId)fail('Hay otro restablecimiento en curso',409);tx.update(ref,{resetPending:false,resetPendingAt:null});tx.create(audit,{id:audit.id,at:Date.now(),action:'resetPassword',actor:actor(u),notify:false,title:'Contraseña temporal asignada',body:email,details:{uid:target.uid,email}})});
  return {ok:true,self:target.uid===u.uid};
 }
 async function changePassword(db,u,d){
  if(!u.mustChangePassword||u.resetPending)fail('No hay una contraseña temporal habilitada',403);
  const password=validPassword(d.password),ref=db.collection('users').doc(u.uid),profile=(await ref.get()).data();
  if(!profile?.mustChangePassword||profile.resetPending)fail('La contraseña temporal cambió; iniciá sesión nuevamente',409);
+ if(typeof d.temporary!=='string'||d.temporary.length>128||!samePassword(d.temporary,profile.temporaryPasswordHash))fail('La contraseña temporaria actual es incorrecta',403);
  if(samePassword(password,profile.temporaryPasswordHash))fail('La nueva contraseña tiene que ser distinta de la temporal');
+ const marker=randomBytes(16).toString('hex');await db.runTransaction(async tx=>{const fresh=(await tx.get(ref)).data();if(fresh?.temporaryPasswordHash!==profile.temporaryPasswordHash||fresh?.resetPending)fail('La contraseña temporal cambió; iniciá sesión nuevamente',409);tx.update(ref,{resetPending:true,resetPendingAt:Date.now(),resetId:marker})});
  await getAuth().updateUser(u.uid,{password});
  await getAuth().revokeRefreshTokens(u.uid);
- await db.runTransaction(async tx=>{const fresh=(await tx.get(ref)).data();if(fresh?.temporaryPasswordHash!==profile.temporaryPasswordHash||fresh?.resetPending)fail('Otro administrador restableció la contraseña; volvé a iniciar sesión',409);tx.update(ref,{mustChangePassword:false,temporaryPasswordHash:null,resetPending:false});tx.create(db.collection('audit').doc(),{at:Date.now(),action:'changePassword',actor:actor(u),notify:false,title:'Contraseña personal actualizada',body:u.email,details:{uid:u.uid}})});
+ await db.runTransaction(async tx=>{const fresh=(await tx.get(ref)).data();if(fresh?.temporaryPasswordHash!==profile.temporaryPasswordHash||fresh?.resetId!==marker)fail('Otro administrador restableció la contraseña; volvé a iniciar sesión',409);tx.update(ref,{mustChangePassword:false,temporaryPasswordHash:null,resetPending:false,resetPendingAt:null});tx.create(db.collection('audit').doc(),{at:Date.now(),action:'changePassword',actor:actor(u),notify:false,title:'Contraseña personal actualizada',body:u.email,details:{uid:u.uid}})});
  return {ok:true};
 }
 async function productHistory(db,u,d){
